@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrera Emocionante</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .font-game {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Dado 3D */
+        .scene {
+            width: 70px;
+            height: 70px;
+            perspective: 400px;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .cube__face {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            color: #1e293b;
+        }
+
+        .cube__face--1 {
+            transform: rotateY(0deg) translateZ(35px);
+        }
+
+        .cube__face--2 {
+            transform: rotateY(90deg) translateZ(35px);
+        }
+
+        .cube__face--3 {
+            transform: rotateY(180deg) translateZ(35px);
+        }
+
+        .cube__face--4 {
+            transform: rotateY(-90deg) translateZ(35px);
+        }
+
+        .cube__face--5 {
+            transform: rotateX(90deg) translateZ(35px);
+        }
+
+        .cube__face--6 {
+            transform: rotateX(-90deg) translateZ(35px);
+        }
+
+        /* Estilos Tablero */
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        .cell {
+            position: relative;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell-start {
+            background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+            color: white;
+        }
+
+        .token {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.4));
+        }
+
+        .pulse-active {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 12px rgba(234, 179, 8, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="p-2 md:p-4 select-none">
+
+    <!-- 1. PANTALLA DE MENÚ INICIAL -->
+    <div id="screen-menu" class="max-w-4xl mx-auto flex flex-col gap-6 py-6 px-4">
+        <div
+            class="text-center space-y-3 bg-white/10 backdrop-blur-md p-6 md:p-8 rounded-3xl border border-white/20 shadow-2xl">
+            <div
+                class="inline-flex items-center justify-center bg-yellow-400 text-indigo-950 p-4 rounded-3xl text-4xl shadow-lg mb-2">
+                <i class="fa-solid fa-flag-checkered"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-game text-yellow-300 tracking-wide drop-shadow-md">CARRERA EMOCIONANTE
+            </h1>
+            <p class="text-sm md:text-base text-indigo-100 max-w-2xl mx-auto">
+                ¡Bienvenidos a la Gran Carrera Emocionante! Den todas las vueltas al circuito que puedan, respondan
+                preguntas, ganen bonificaciones y sumen la mayor cantidad de puntos antes de que el reloj llegue a cero.
+            </p>
+        </div>
+
+        <!-- REGLAS RÁPIDAS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+                class="bg-indigo-900/60 backdrop-blur-md border border-indigo-500/30 p-4 rounded-2xl flex items-start gap-3">
+                <div class="text-yellow-400 text-2xl"><i class="fa-solid fa-stopwatch"></i></div>
+                <div>
+                    <h3 class="font-bold text-sm text-yellow-300">1. Carrera por Tiempo</h3>
+                    <p class="text-xs text-indigo-200">La partida dura los minutos seleccionados. ¡Gana el equipo con
+                        más puntos!</p>
+                </div>
+            </div>
+            <div
+                class="bg-indigo-900/60 backdrop-blur-md border border-indigo-500/30 p-4 rounded-2xl flex items-start gap-3">
+                <div class="text-emerald-400 text-2xl"><i class="fa-solid fa-rotate-right"></i></div>
+                <div>
+                    <h3 class="font-bold text-sm text-emerald-300">2. Vueltas e Inmunidad</h3>
+                    <p class="text-xs text-indigo-200">¡Completar un circuito te da +500 puntos extra! Gana también
+                        escudos de inmunidad y multiplicadores.</p>
+                </div>
+            </div>
+            <div
+                class="bg-indigo-900/60 backdrop-blur-md border border-indigo-500/30 p-4 rounded-2xl flex items-start gap-3">
+                <div class="text-rose-400 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                <div>
+                    <h3 class="font-bold text-sm text-rose-300">3. Protégete de Castigos</h3>
+                    <p class="text-xs text-indigo-200">Si fallas una pregunta sin inmunidad, perderás puntos,
+                        retrocederás o suspenderás tu turno.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN EN MENÚ -->
+        <div class="bg-slate-900/90 border border-slate-700 p-6 rounded-3xl shadow-2xl space-y-5">
+
+            <!-- Selector de Duración y Cantidad de Equipos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-800 pb-4">
+
+                <!-- Duración -->
+                <div class="space-y-1">
+                    <h2 class="text-lg font-game text-yellow-400"><i class="fa-solid fa-hourglass-half"></i> Duración de
+                        Carrera</h2>
+                    <p class="text-xs text-slate-300">Selecciona cuántos minutos durará la competencia:</p>
+                    <div class="flex items-center gap-2 pt-2">
+                        <button onclick="seleccionarTiempo(5)" id="time-btn-5"
+                            class="time-select-btn flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition">5
+                            min.</button>
+                        <button onclick="seleccionarTiempo(10)" id="time-btn-10"
+                            class="time-select-btn flex-1 py-2 bg-slate-800 hover:bg-indigo-600 text-slate-300 font-bold rounded-xl text-sm transition">10
+                            min.</button>
+                        <button onclick="seleccionarTiempo(15)" id="time-btn-15"
+                            class="time-select-btn flex-1 py-2 bg-slate-800 hover:bg-indigo-600 text-slate-300 font-bold rounded-xl text-sm transition">15
+                            min.</button>
+                        <button onclick="seleccionarTiempo(20)" id="time-btn-20"
+                            class="time-select-btn flex-1 py-2 bg-slate-800 hover:bg-indigo-600 text-slate-300 font-bold rounded-xl text-sm transition">20
+                            min.</button>
+                    </div>
+                </div>
+
+                <!-- Equipos count -->
+                <div class="space-y-1">
+                    <h2 class="text-lg font-game text-yellow-400"><i class="fa-solid fa-users-gear"></i> Equipos</h2>
+                    <p class="text-xs text-slate-300">Elige la cantidad de equipos (2 a 8):</p>
+                    <div
+                        class="flex items-center justify-between bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 mt-2">
+                        <span class="font-bold text-sm text-slate-200">Participantes:</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="cambiarCantidadEquipos(-1)"
+                                class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-lg text-white transition flex items-center justify-center">-</button>
+                            <span id="menu-team-count"
+                                class="font-game text-xl text-yellow-300 w-6 text-center">2</span>
+                            <button onclick="cambiarCantidadEquipos(1)"
+                                class="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-lg text-white transition flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Equipos -->
+            <div id="menu-teams-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1">
+                <!-- Se genera dinámicamente -->
+            </div>
+
+            <button onclick="iniciarJuegoDesdeMenu()"
+                class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-game py-4 rounded-2xl shadow-xl transition text-xl tracking-wide border-2 border-emerald-300/40 transform active:scale-95 flex items-center justify-center gap-3">
+                <i class="fa-solid fa-flag-checkered text-2xl"></i> ¡INICIAR CARRERA BÍBLICA!
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. CONTENEDOR PRINCIPAL DEL JUEGO -->
+    <div id="screen-game" class="max-w-7xl mx-auto flex flex-col gap-4 hidden">
+
+        <!-- HEADER CON CRONÓMETRO -->
+        <header
+            class="flex flex-col md:flex-row justify-between items-center bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-xl gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-yellow-400 text-indigo-950 p-3 rounded-2xl text-2xl md:text-3xl shadow-lg">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-game text-yellow-300 tracking-wide drop-shadow-md">CARRERA
+                        EMOCIONANTE</h1>
+                    <p class="text-xs md:text-sm text-indigo-100 font-semibold">¡Suma la mayor cantidad de puntos antes
+                        del tiempo!</p>
+                </div>
+            </div>
+
+            <!-- Cronómetro en Vivo -->
+            <div
+                class="flex items-center gap-3 bg-slate-900/90 border border-slate-700/80 px-5 py-2.5 rounded-2xl shadow-inner">
+                <i class="fa-solid fa-clock text-amber-400 text-2xl animate-pulse"></i>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tiempo Restante</span>
+                    <span id="timer-display"
+                        class="font-game text-2xl md:text-3xl text-yellow-300 leading-none">05:00</span>
+                </div>
+            </div>
+
+            <!-- Botones Globales -->
+            <div class="flex items-center gap-2">
+                <button onclick="volverAlMenu()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition active:scale-95 text-xs md:text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-house"></i> Menú
+                </button>
+                <button onclick="reiniciarJuego()"
+                    class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition active:scale-95 text-xs md:text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Reiniciar
+                </button>
+            </div>
+        </header>
+
+        <!-- LAYOUT DE JUEGO -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+            <!-- PANEL DE CONTROL Y DADO (COL 4) -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+
+                <!-- TURN CONTROL CARD -->
+                <div
+                    class="bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/20 shadow-xl flex flex-col items-center gap-4">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-200">Turno Actual</h2>
+
+                    <div id="active-team-card"
+                        class="w-full bg-white text-slate-800 p-4 rounded-2xl shadow-lg flex items-center justify-between transition-all duration-300">
+                        <div class="flex items-center gap-3">
+                            <div id="active-team-icon-bg"
+                                class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl shadow-md">
+                                <i id="active-team-icon" class="fa-solid fa-car"></i>
+                            </div>
+                            <div>
+                                <h3 id="active-team-name" class="font-game text-lg leading-tight">Cargando...</h3>
+                                <span id="active-team-status" class="text-xs font-bold text-emerald-600">Listo para
+                                    lanzar</span>
+                            </div>
+                        </div>
+                        <div id="active-team-shield" class="hidden text-amber-500 text-2xl" title="Inmunidad Activada">
+                            <i class="fa-solid fa-shield-halved animate-bounce"></i>
+                        </div>
+                    </div>
+
+                    <!-- DADO & BOTÓN DE LANZAR -->
+                    <div class="flex items-center justify-around w-full py-2">
+                        <div class="scene">
+                            <div id="cube" class="cube">
+                                <div class="cube__face cube__face--1"><i class="fa-solid fa-dice-one"></i></div>
+                                <div class="cube__face cube__face--2"><i class="fa-solid fa-dice-two"></i></div>
+                                <div class="cube__face cube__face--3"><i class="fa-solid fa-dice-three"></i></div>
+                                <div class="cube__face cube__face--4"><i class="fa-solid fa-dice-four"></i></div>
+                                <div class="cube__face cube__face--5"><i class="fa-solid fa-dice-five"></i></div>
+                                <div class="cube__face cube__face--6"><i class="fa-solid fa-dice-six"></i></div>
+                            </div>
+                        </div>
+
+                        <button id="btn-roll" onclick="lanzarDado()"
+                            class="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-indigo-950 font-game text-lg px-6 py-4 rounded-2xl shadow-lg transform active:scale-95 transition flex flex-col items-center gap-1 border-2 border-yellow-200">
+                            <span><i class="fa-solid fa-cubes text-xl"></i> LANZAR</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABLA DE POSICIONES Y PUNTAJES -->
+                <div
+                    class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-xl flex-1 flex flex-col">
+                    <h2
+                        class="text-xs font-bold uppercase tracking-wider text-indigo-200 mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Marcador de Equipos</span>
+                        <span id="total-teams-count"
+                            class="text-xs bg-indigo-900/60 px-2 py-0.5 rounded-full text-indigo-200">2 Equipos</span>
+                    </h2>
+
+                    <div id="scores-container" class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                        <!-- Se genera dinámicamente -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TABLERO DE JUEGO (COL 8) -->
+            <div
+                class="lg:col-span-8 bg-white/10 backdrop-blur-md p-3 md:p-5 rounded-2xl border border-white/20 shadow-xl flex items-center justify-center">
+                <div id="board" class="board-grid w-full aspect-[4/3] md:aspect-[16/10] max-h-[600px]">
+                    <!-- Casillas generadas mediante JS -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL DE PREGUNTA / EVENTO -->
+    <div id="modal-question"
+        class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div
+            class="bg-slate-900 border-2 border-indigo-500/50 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-5 relative overflow-hidden">
+
+            <div id="modal-header-bg" class="p-3 rounded-2xl flex items-center justify-between text-white shadow-md">
+                <div class="flex items-center gap-3">
+                    <i id="modal-team-icon" class="fa-solid fa-car text-xl"></i>
+                    <span id="modal-team-name" class="font-game text-lg">Equipo</span>
+                </div>
+                <span class="text-xs bg-black/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider">Pregunta
+                    Bíblica</span>
+            </div>
+
+            <div class="space-y-2">
+                <span id="question-category"
+                    class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Categoría</span>
+                <h3 id="question-text" class="text-lg md:text-xl font-bold text-white leading-relaxed">¿Pregunta aquí?
+                </h3>
+            </div>
+
+            <div id="options-container" class="grid grid-cols-1 gap-2.5">
+                <!-- Botones de opciones -->
+            </div>
+
+            <div id="feedback-panel" class="hidden p-4 rounded-2xl text-center space-y-2 border">
+                <h4 id="feedback-title" class="font-game text-xl">¡Resultado!</h4>
+                <p id="feedback-desc" class="text-sm font-medium">Descripción del premio o castigo.</p>
+                <button id="btn-close-modal" onclick="cerrarModalPregunta()"
+                    class="mt-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-6 rounded-xl transition text-sm">
+                    Continuar Juego
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FINAL DE PODIO Y RESULTADOS -->
+    <div id="modal-game-over"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div
+            class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl space-y-6 text-center">
+
+            <div class="space-y-2">
+                <div
+                    class="inline-flex items-center justify-center bg-amber-400 text-indigo-950 w-16 h-16 rounded-3xl text-3xl shadow-lg">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-game text-yellow-300">¡TIEMPO FINALIZADO!</h2>
+                <p class="text-sm text-slate-300">La carrera por tiempo ha terminado. Aquí están los resultados finales:
+                </p>
+            </div>
+
+            <!-- Tabla del Podio -->
+            <div id="podium-container" class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                <!-- Se llena mediante JS -->
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button onclick="reiniciarJuego(); document.getElementById('modal-game-over').classList.add('hidden');"
+                    class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-game py-3.5 rounded-2xl shadow-lg transition text-lg">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Nueva Carrera
+                </button>
+                <button onclick="volverAlMenu(); document.getElementById('modal-game-over').classList.add('hidden');"
+                    class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-6 rounded-2xl transition text-sm">
+                    Menú
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LÓGICA -->
+    <script>
+        /* ==========================================================================
+           1. BANCO DE PREGUNTAS MODULAR (70 PREGUNTAS EN TOTAL)
+           ========================================================================== */
+        const BANCO_PREGUNTAS = [
+            // --- FÁCIL (24 Preguntas) ---
+            { id: 1, nivel: "facil", categoria: "José el Soñador", pregunta: "¿Cómo se llamaba el papá de José?", opciones: ["Isaac", "Jacob", "Moisés", "Abraham"], correcta: 1, puntos: 100 },
+            { id: 2, nivel: "facil", categoria: "José el Soñador", pregunta: "¿Qué regalo especial le hizo Jacob a José?", opciones: ["Un anillo", "Una espada", "Una túnica de muchos colores", "Un barco"], correcta: 2, puntos: 100 },
+            { id: 3, nivel: "facil", categoria: "José el Soñador", pregunta: "En uno de sus sueños, ¿qué hacían las gavillas de sus hermanos?", opciones: ["Se inclinaban ante la gavilla de José", "Se convertían en flores", "Se escondían en una cueva", "Volaban por el cielo"], correcta: 0, puntos: 100 },
+            { id: 4, nivel: "facil", categoria: "José el Soñador", pregunta: "¿Quién envió a José a buscar a sus hermanos?", opciones: ["El faraón", "Un soldado", "El carcelero", "Su papá Jacob"], correcta: 3, puntos: 100 },
+            { id: 5, nivel: "facil", categoria: "José el Soñador", pregunta: "¿A qué país llevaron a José después de venderlo sus hermanos?", opciones: ["Egipto", "Nínive", "Babilonia", "Roma"], correcta: 0, puntos: 100 },
+            { id: 6, nivel: "facil", categoria: "José el Soñador", pregunta: "¿Quién le pidió a José que explicara sus sueños?", opciones: ["El rey de Nínive", "El faraón de Egipto", "El papá de José", "El capitán del barco"], correcta: 1, puntos: 100 },
+            { id: 7, nivel: "facil", categoria: "Jonás", pregunta: "¿A qué ciudad le pidió Dios a Jonás que fuera?", opciones: ["Jerusalén", "Belén", "Nínive", "Egipto"], correcta: 2, puntos: 100 },
+            { id: 8, nivel: "facil", categoria: "Jonás", pregunta: "¿A qué lugar intentó escapar Jonás?", opciones: ["Tarsis", "Nínive", "Jericó", "Damasco"], correcta: 0, puntos: 100 },
+            { id: 9, nivel: "facil", categoria: "Jonás", pregunta: "¿Qué animal se tragó a Jonás?", opciones: ["Un león", "Un gran pez", "Un camello", "Un águila"], correcta: 1, puntos: 100 },
+            { id: 10, nivel: "facil", categoria: "Jonás", pregunta: "¿Cuánto tiempo estuvo Jonás dentro del gran pez?", opciones: ["Un día", "Dos días", "Tres días y tres noches", "Una semana"], correcta: 2, puntos: 100 },
+            { id: 11, nivel: "facil", categoria: "Jonás", pregunta: "¿Qué debía hacer Jonás en Nínive?", opciones: ["Dar el mensaje de Dios", "Construir un barco", "Buscar a José", "Cantar para el faraón"], correcta: 0, puntos: 100 },
+            { id: 12, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Quiénes fueron encerrados en la cárcel?", opciones: ["José y Jacob", "Pablo y Silas", "Jonás y el capitán", "Pedro y Andrés"], correcta: 1, puntos: 100 },
+            { id: 13, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Qué hacían Pablo y Silas en la cárcel?", opciones: ["Preparaban una cena", "Dormían todo el día", "Oraban y cantaban a Dios", "Construían una puerta"], correcta: 2, puntos: 100 },
+            { id: 14, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Dónde estaban Pablo y Silas cuando cantaban?", opciones: ["En la cárcel", "En un barco", "En el palacio", "En el campo"], correcta: 0, puntos: 100 },
+            { id: 15, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Qué pasó cuando hubo un fuerte terremoto en la cárcel?", opciones: ["El barco se hundió", "Se abrieron las puertas", "Llegó el faraón", "Cayó una gran lluvia"], correcta: 1, puntos: 100 },
+            { id: 16, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Qué le dijeron Pablo y Silas al carcelero que preguntó cómo podía ser salvo?", opciones: ["Cree en el Señor Jesús", "Busca una túnica", "Viaja a Nínive", "Habla con el faraón"], correcta: 0, puntos: 100 },
+            { id: 17, nivel: "facil", categoria: "Pablo y Silas", pregunta: "¿Qué compartieron Pablo y Silas con el carcelero?", opciones: ["Comida para el barco", "Los sueños de José", "El mensaje de Jesús", "Un mapa de Egipto"], correcta: 2, puntos: 100 },
+
+            // --- MEDIA (24 Preguntas) ---
+            { id: 18, nivel: "media", categoria: "José el Soñador", pregunta: "¿Por qué estaban celosos los hermanos de José?", opciones: ["Porque Jacob quería mucho a José y le dio una túnica especial", "Porque José tenía un barco", "Porque José era el faraón", "Porque José vivía en Nínive"], correcta: 0, puntos: 150 },
+            { id: 19, nivel: "media", categoria: "José el Soñador", pregunta: "¿A quiénes explicó José sus sueños mientras estaba en la cárcel?", opciones: ["A dos soldados romanos", "Al copero y al panadero del faraón", "A Jacob y a sus hermanos", "A los habitantes de Nínive"], correcta: 1, puntos: 150 },
+            { id: 20, nivel: "media", categoria: "José el Soñador", pregunta: "¿Qué anunciaban los sueños del faraón que José explicó?", opciones: ["Siete días de lluvia", "Una guerra en Nínive", "Siete años buenos y luego siete años de hambre", "Que el mar se abriría"], correcta: 2, puntos: 150 },
+            { id: 21, nivel: "media", categoria: "José el Soñador", pregunta: "¿Qué trabajo importante le dio el faraón a José?", opciones: ["Gobernar y guardar alimento para Egipto", "Capitanear un barco", "Cuidar el templo de Nínive", "Construir una cárcel"], correcta: 0, puntos: 150 },
+            { id: 22, nivel: "media", categoria: "José el Soñador", pregunta: "¿Por qué fueron los hermanos de José a Egipto?", opciones: ["Para buscar a Jonás", "Para comprar comida durante el hambre", "Para visitar al carcelero", "Para buscar un barco"], correcta: 1, puntos: 150 },
+            { id: 23, nivel: "media", categoria: "José el Soñador", pregunta: "Cuando José volvió a ver a sus hermanos, ¿qué hizo al final?", opciones: ["Los echó de Egipto", "Se escondió para siempre", "Los perdonó y volvió a estar con ellos", "Los mandó a la cárcel"], correcta: 2, puntos: 150 },
+            { id: 24, nivel: "media", categoria: "Jonás", pregunta: "¿Qué hicieron los marineros para detener la tormenta, siguiendo lo que Jonás les dijo?", opciones: ["Echaron a Jonás al mar", "Llevaron el barco a Egipto", "Llamaron al faraón", "Tiraron la comida al cielo"], correcta: 0, puntos: 150 },
+            { id: 25, nivel: "media", categoria: "Jonás", pregunta: "¿Qué hizo Jonás mientras estaba dentro del gran pez?", opciones: ["Construyó una casa", "Oró a Dios", "Buscó a sus hermanos", "Habló con el faraón"], correcta: 1, puntos: 150 },
+            { id: 26, nivel: "media", categoria: "Jonás", pregunta: "¿Qué hizo la gente de Nínive al escuchar el mensaje de Jonás?", opciones: ["Se fue en barco", "Encerró a Jonás", "Se arrepintió y dejó de hacer lo malo", "Vendió comida en Egipto"], correcta: 2, puntos: 150 },
+            { id: 27, nivel: "media", categoria: "Jonás", pregunta: "¿Qué le dio Dios a Jonás para que tuviera sombra?", opciones: ["Una planta grande", "Una túnica de colores", "Una casa de piedra", "Un barco"], correcta: 0, puntos: 150 },
+            { id: 28, nivel: "media", categoria: "Jonás", pregunta: "¿Qué hizo que la planta que daba sombra se secara?", opciones: ["Una tormenta", "Un gusano", "El gran pez", "Los marineros"], correcta: 1, puntos: 150 },
+            { id: 29, nivel: "media", categoria: "Jonás", pregunta: "¿Qué quería enseñarle Dios a Jonás con la planta y la ciudad?", opciones: ["A construir barcos", "A interpretar sueños", "Que Dios se preocupa por las personas", "A gobernar Egipto"], correcta: 2, puntos: 150 },
+            { id: 30, nivel: "media", categoria: "Pablo y Silas", pregunta: "¿Qué hicieron Pablo y Silas cerca de la medianoche en la cárcel?", opciones: ["Oraron y cantaron himnos a Dios", "Se fueron en barco", "Se escondieron en el patio", "Prepararon comida para el faraón"], correcta: 0, puntos: 150 },
+            { id: 31, nivel: "media", categoria: "Pablo y Silas", pregunta: "Cuando el carcelero vio abiertas las puertas, ¿qué pensó al principio?", opciones: ["Que había llegado José", "Que los presos habían escapado", "Que era hora de cantar", "Que estaba en Nínive"], correcta: 1, puntos: 150 },
+            { id: 32, nivel: "media", categoria: "Pablo y Silas", pregunta: "¿Qué gritó Pablo para evitar que el carcelero se hiciera daño?", opciones: ["¡El barco se hunde!", "¡Viene el faraón!", "¡Estamos todos aquí!", "¡Vayan a Nínive!"], correcta: 2, puntos: 150 },
+            { id: 33, nivel: "media", categoria: "Pablo y Silas", pregunta: "¿Quiénes podían escuchar a Pablo y Silas cantar en la cárcel?", opciones: ["Los otros prisioneros", "Los hermanos de José", "La gente de Nínive", "Los marineros de Jonás"], correcta: 0, puntos: 150 },
+            { id: 34, nivel: "media", categoria: "Pablo y Silas", pregunta: "¿Qué hizo el carcelero y su familia después de escuchar el mensaje de Jesús?", opciones: ["Se fueron a Egipto", "Creyeron en Jesús y fueron bautizados", "Vendieron la cárcel", "Subieron a un barco"], correcta: 1, puntos: 150 },
+
+            // --- DIFÍCIL (22 Preguntas) ---
+            { id: 35, nivel: "dificil", categoria: "José el Soñador", pregunta: "En el segundo sueño de José, ¿qué representaban el sol, la luna y las once estrellas?", opciones: ["A los marineros", "A su familia inclinándose ante él", "A siete años de hambre", "A la ciudad de Nínive"], correcta: 1, puntos: 200 },
+            { id: 36, nivel: "dificil", categoria: "José el Soñador", pregunta: "¿A quién vendieron los hermanos a José cuando llegó a Egipto?", opciones: ["Al carcelero", "Al capitán del barco", "A Potifar, un funcionario del faraón", "Al rey de Nínive"], correcta: 2, puntos: 200 },
+            { id: 37, nivel: "dificil", categoria: "José el Soñador", pregunta: "¿Por qué terminó José en la cárcel en Egipto?", opciones: ["La esposa de Potifar lo acusó injustamente", "Se escapó de la cárcel", "No quiso explicar los sueños", "Discutió con el faraón"], correcta: 0, puntos: 200 },
+            { id: 38, nivel: "dificil", categoria: "José el Soñador", pregunta: "¿Qué pidió José al copero cuando explicó su sueño?", opciones: ["Que llevara a Jonás a Nínive", "Que se acordara de él y hablara con el faraón", "Que escondiera la túnica", "Que lo llevara en barco a casa"], correcta: 1, puntos: 200 },
+            { id: 39, nivel: "dificil", categoria: "José el Soñador", pregunta: "¿Qué hizo José para ayudar a Egipto durante los siete años buenos?", opciones: ["Envió a todos a Nínive", "Dejó que se desperdiciara la cosecha", "Guardó alimento para los años de hambre", "Construyó una cárcel más grande"], correcta: 2, puntos: 200 },
+            { id: 40, nivel: "dificil", categoria: "José el Soñador", pregunta: "¿Por qué dijo José que Dios lo había enviado antes a Egipto?", opciones: ["Para salvar vidas durante el hambre", "Para encontrar un barco", "Para ser vendido otra vez", "Para visitar la ciudad de Nínive"], correcta: 0, puntos: 200 },
+            { id: 41, nivel: "dificil", categoria: "Jonás", pregunta: "Durante la tormenta, ¿dónde encontraron los marineros a Jonás?", opciones: ["En el palacio del faraón", "Dormido en la parte baja del barco", "En la ciudad de Nínive", "Dentro de una cárcel"], correcta: 1, puntos: 200 },
+            { id: 42, nivel: "dificil", categoria: "Jonás", pregunta: "¿Cómo supieron los marineros que Jonás era la causa de la tormenta?", opciones: ["José se lo contó", "El faraón les envió una carta", "Echaron suertes y cayó sobre Jonás", "Lo vieron salir del gran pez"], correcta: 2, puntos: 200 },
+            { id: 43, nivel: "dificil", categoria: "Jonás", pregunta: "¿Qué hizo el rey de Nínive cuando escuchó el mensaje de Jonás?", opciones: ["Pidió a todos que dejaran de hacer lo malo", "Mandó a Jonás a Egipto", "Construyó un barco", "Encerró a todos en la cárcel"], correcta: 0, puntos: 200 },
+            { id: 44, nivel: "dificil", categoria: "Jonás", pregunta: "¿Por qué se enojó Jonás cuando Dios perdonó a Nínive?", opciones: ["Porque perdió su túnica", "Porque no quería que Dios perdonara a esa ciudad", "Porque el barco se había perdido", "Porque el faraón no lo escuchó"], correcta: 1, puntos: 200 },
+            { id: 45, nivel: "dificil", categoria: "Jonás", pregunta: "¿Qué comparación usó Dios para enseñarle a Jonás a tener compasión?", opciones: ["Una gavilla y una estrella", "Una cárcel y un terremoto", "La planta que daba sombra y la gente de Nínive", "Un barco y una túnica"], correcta: 2, puntos: 200 },
+            { id: 46, nivel: "dificil", categoria: "Pablo y Silas", pregunta: "¿En qué ciudad estaban Pablo y Silas cuando fueron encarcelados?", opciones: ["Filipos", "Nínive", "Egipto", "Belén"], correcta: 0, puntos: 200 },
+            { id: 47, nivel: "dificil", categoria: "Pablo y Silas", pregunta: "¿Por qué se enojaron los dueños de la joven con Pablo y Silas?", opciones: ["Porque no les dieron una túnica", "Porque ya no podían ganar dinero con la joven", "Porque se llevaron su barco", "Porque hablaron con el faraón"], correcta: 1, puntos: 200 },
+            { id: 48, nivel: "dificil", categoria: "Pablo y Silas", pregunta: "Cuando se abrieron las puertas de la cárcel, ¿qué hicieron Pablo y Silas?", opciones: ["Se fueron corriendo", "Se escondieron en Nínive", "Se quedaron y hablaron con el carcelero", "Buscaron al faraón"], correcta: 2, puntos: 200 },
+            { id: 49, nivel: "dificil", categoria: "Pablo y Silas", pregunta: "¿Qué hizo el carcelero después de escuchar a Pablo y Silas?", opciones: ["Les lavó las heridas y los llevó a su casa", "Los mandó a Egipto", "Les pidió que interpretaran sueños", "Los puso otra vez en el barco"], correcta: 0, puntos: 200 },
+            { id: 50, nivel: "dificil", categoria: "Pablo y Silas", pregunta: "¿Qué hizo el carcelero con su familia después de escuchar el mensaje de Dios?", opciones: ["Se mudaron a Nínive", "Creyeron en Dios y fueron bautizados", "Vendieron comida en Egipto", "Encerraron a Pablo y Silas"], correcta: 1, puntos: 200 },
+
+            // --- APLICACIÓN (20 Preguntas: 7 fáciles, 7 medias y 6 difíciles) ---
+            { id: 51, nivel: "facil", categoria: "Aplicación", pregunta: "Te enojas porque alguien tomó tu juguete sin pedir permiso. ¿Qué puedes hacer primero?", opciones: ["Respirar, calmarte y decirle cómo te sientes", "Empujarlo para recuperar el juguete", "Gritarle muy fuerte", "Romper otro juguete"], correcta: 0, puntos: 100 },
+            { id: 52, nivel: "facil", categoria: "Aplicación", pregunta: "Tienes miedo durante una tormenta. ¿Qué sería bueno hacer?", opciones: ["Esconderte lejos sin avisar", "Decírselo a un adulto de confianza, orar a Dios y quedarte cerca", "Asustar a otra persona", "Salir corriendo afuera"], correcta: 1, puntos: 100 },
+            { id: 53, nivel: "facil", categoria: "Aplicación", pregunta: "Estás triste porque perdiste un juego. ¿Qué puedes hacer?", opciones: ["Decir que no te importa aunque sí", "Echarle la culpa a todos", "Contarle a alguien cómo te sientes y pedirle a Dios consuelo", "Dejar de hablar con tus amigos"], correcta: 2, puntos: 100 },
+            { id: 54, nivel: "facil", categoria: "Aplicación", pregunta: "Tu amiga logró algo que quería mucho y tú estás feliz por ella. ¿Qué puedes hacer?", opciones: ["Felicitarla y celebrar con ella", "Decir que no se lo merece", "Cambiar de tema para que no disfrute", "Burlarte de su logro"], correcta: 0, puntos: 100 },
+            { id: 55, nivel: "facil", categoria: "Aplicación", pregunta: "Cometiste un error y sientes mucho enojo contigo. ¿Qué te puede ayudar?", opciones: ["Insultarte", "Tomar aire, orar a Dios y recordar que puedes aprender del error", "Esconderte y no pedir ayuda", "Culpar a un amigo"], correcta: 1, puntos: 100 },
+            { id: 56, nivel: "facil", categoria: "Aplicación", pregunta: "Te da nervios hablar frente al grupo. ¿Qué podrías hacer?", opciones: ["Salir corriendo sin decir nada", "Reírte de quien está hablando", "Respirar despacio y pedir apoyo si lo necesitas", "Decir que nadie puede hablar"], correcta: 2, puntos: 100 },
+            { id: 57, nivel: "facil", categoria: "Aplicación", pregunta: "Recibiste una buena noticia y estás feliz. ¿Cómo puedes compartir tu alegría?", opciones: ["Dar gracias a Dios y contárselo con respeto a alguien", "Presumir para que los demás se sientan mal", "Interrumpir a todos a gritos", "Decir que los demás no pueden alegrarse"], correcta: 0, puntos: 100 },
+            { id: 58, nivel: "media", categoria: "Aplicación", pregunta: "Estás tan enojado que quieres gritar. ¿Cuál es una buena manera de responder?", opciones: ["Gritar hasta que todos se callen", "Hacer una pausa, respirar, orar a Dios y luego explicar qué te molestó", "Tirar lo que tengas en las manos", "Irte sin avisar a un lugar lejano"], correcta: 1, puntos: 150 },
+            { id: 59, nivel: "media", categoria: "Aplicación", pregunta: "Te sientes asustado porque no encuentras a tu familia en un lugar público. ¿Qué debes hacer?", opciones: ["Salir del lugar para buscarlos afuera", "Irte con una persona desconocida", "Quedarte en un sitio seguro y pedir ayuda a un trabajador o adulto de confianza", "Esconderte sin avisar"], correcta: 2, puntos: 150 },
+            { id: 60, nivel: "media", categoria: "Aplicación", pregunta: "Estás triste y no tienes ganas de jugar. ¿Qué podrías hacer?", opciones: ["Decírselo a alguien de confianza, pedir compañía y orar a Dios", "Fingir que todo está bien y alejarte de todos", "Enojarte con quien te pregunte", "Hacer que otro niño también se sienta triste"], correcta: 0, puntos: 150 },
+            { id: 61, nivel: "media", categoria: "Aplicación", pregunta: "Tu equipo ganó y estás muy feliz, pero el otro equipo perdió. ¿Qué sería amable hacer?", opciones: ["Burlarte del otro equipo", "Celebrar sin humillar y felicitar a todos por jugar", "Decir que el otro equipo no sabe jugar", "No dejar que nadie más participe"], correcta: 1, puntos: 150 },
+            { id: 62, nivel: "media", categoria: "Aplicación", pregunta: "Un compañero te dice algo que te lastima y te enojas. ¿Qué puedes hacer?", opciones: ["Decirle algo más hiriente", "Empujarlo para que aprenda", "Decir con calma que eso te molestó y buscar ayuda si continúa", "Guardar el enojo y vengarte después"], correcta: 2, puntos: 150 },
+            { id: 63, nivel: "media", categoria: "Aplicación", pregunta: "Tienes miedo y alguien te pide guardar un secreto que te hace sentir inseguro. ¿Qué debes hacer?", opciones: ["Contárselo a un adulto de confianza aunque te hayan pedido callar", "Prometer que nunca lo contarás", "Irte a solas con esa persona", "Guardar el miedo para ti"], correcta: 0, puntos: 150 },
+            { id: 64, nivel: "media", categoria: "Aplicación", pregunta: "Te sientes triste porque no te incluyeron en un juego. ¿Qué podrías decir?", opciones: ["Nunca volveré a hablarles", "Me sentí triste; ¿puedo jugar con ustedes la próxima vez?", "Ustedes son malos y no tienen amigos", "Voy a arruinar el juego"], correcta: 1, puntos: 150 },
+            { id: 65, nivel: "dificil", categoria: "Aplicación", pregunta: "Estás muy enojado y sientes ganas de pegar. ¿Cuál es la respuesta más segura?", opciones: ["Pegar antes de que te peguen", "Lanzar algo lejos", "Apartarte para calmarte, mantener las manos quietas, orar y avisar a un adulto", "Amenazar a la otra persona"], correcta: 2, puntos: 200 },
+            { id: 66, nivel: "dificil", categoria: "Aplicación", pregunta: "Te asusta una discusión fuerte entre otras personas. ¿Qué sería lo más seguro?", opciones: ["Ir a un lugar seguro y avisar a un adulto de confianza", "Meterte en medio para separarlos", "Gritarles más fuerte", "Esconderte y no contárselo a nadie"], correcta: 0, puntos: 200 },
+            { id: 67, nivel: "dificil", categoria: "Aplicación", pregunta: "Llevas varios días sintiéndote triste y te cuesta disfrutar las cosas. ¿Qué puedes hacer?", opciones: ["Esperar sin contárselo a nadie", "Hablar con un adulto de confianza, pedir ayuda y orar a Dios por consuelo", "Decidir que nunca volverás a estar feliz", "Alejarte de todas las personas"], correcta: 1, puntos: 200 },
+            { id: 68, nivel: "dificil", categoria: "Aplicación", pregunta: "Estás feliz y emocionado por contar algo, pero otra persona está hablando. ¿Cómo puedes actuar?", opciones: ["Hablar más fuerte que ella", "Interrumpir para que te escuchen primero", "Esperar tu turno y escuchar mientras tanto", "Irte enojado"], correcta: 2, puntos: 200 },
+            { id: 69, nivel: "dificil", categoria: "Aplicación", pregunta: "Te enojas porque una regla del juego te parece injusta. ¿Qué puedes hacer para resolverlo?", opciones: ["Explicar con calma qué te parece injusto y escuchar a los demás", "Cambiar la regla sin avisar", "Dejar de jugar y acusar a todos", "Romper los materiales del juego"], correcta: 0, puntos: 200 },
+            { id: 70, nivel: "dificil", categoria: "Aplicación", pregunta: "Estás feliz, pero notas que un amigo está llorando. ¿Qué puedes hacer?", opciones: ["Decirle que deje de llorar", "Preguntarle si quiere contar qué pasó y ofrecerle compañía", "Burlarte para animarlo", "Ignorarlo porque tú estás feliz"], correcta: 1, puntos: 200 }
+        ];
+
+        /* ==========================================================================
+           2. PRESETS Y CONFIGURACIÓN
+           ========================================================================== */
+        const EQUIPOS_PRESET = [
+            { nombre: "Águilas", color: "#ef4444", icono: "fa-car-side" },
+            { nombre: "Leones", color: "#3b82f6", icono: "fa-truck-monster" },
+            { nombre: "Guerreros", color: "#10b981", icono: "fa-van-shuttle" },
+            { nombre: "Valientes", color: "#f59e0b", icono: "fa-motorcycle" },
+            { nombre: "Bendecidos", color: "#8b5cf6", icono: "fa-tractor" },
+            { nombre: "Luz del Mundo", color: "#ec4899", icono: "fa-car" },
+            { nombre: "Vencedores", color: "#06b6d4", icono: "fa-bus" },
+            { nombre: "Campeones", color: "#84cc16", icono: "fa-rocket" }
+        ];
+
+        let equipos = [];
+        let turnoActualIndex = 0;
+        let juegoBloqueado = false;
+        let totalCasillas = 20; // Circuito continuo de 20 casillas
+        let configTeamCount = 2;
+        let duracionMinutos = 5;
+        let tiempoRestanteSegundos = 300;
+        let timerInterval = null;
+        let juegoFinalizado = false;
+        let preguntasUsadasIds = new Set();
+
+        const CIRCUITO_MAPA = [
+            { row: 5, col: 0 }, { row: 5, col: 1 }, { row: 5, col: 2 }, { row: 5, col: 3 }, { row: 5, col: 4 }, { row: 5, col: 5 }, { row: 5, col: 6 }, { row: 5, col: 7 },
+            { row: 4, col: 7 }, { row: 3, col: 7 }, { row: 2, col: 7 }, { row: 1, col: 7 }, { row: 0, col: 7 },
+            { row: 0, col: 6 }, { row: 0, col: 5 }, { row: 0, col: 4 }, { row: 0, col: 3 }, { row: 0, col: 2 }, { row: 0, col: 1 }, { row: 0, col: 0 }
+        ];
+
+        /* ==========================================================================
+           3. LÓGICA DE DIFICULTAD Y SELECCIÓN DE PREGUNTAS
+           ========================================================================== */
+        function obtenerDificultadPorCasilla(casilla) {
+            if (casilla <= 7) return "facil";
+            if (casilla <= 14) return "media";
+            return "dificil";
+        }
+
+        function obtenerPreguntaAleatoriaPorCasilla(casilla) {
+            const nivelObjetivo = obtenerDificultadPorCasilla(casilla);
+            let disponibles = BANCO_PREGUNTAS.filter(p => p.nivel === nivelObjetivo && !preguntasUsadasIds.has(p.id));
+
+            if (disponibles.length === 0) {
+                BANCO_PREGUNTAS.filter(p => p.nivel === nivelObjetivo).forEach(p => preguntasUsadasIds.delete(p.id));
+                disponibles = BANCO_PREGUNTAS.filter(p => p.nivel === nivelObjetivo);
+            }
+
+            const indiceAleatorio = Math.floor(Math.random() * disponibles.length);
+            const preguntaSeleccionada = disponibles[indiceAleatorio];
+            preguntasUsadasIds.add(preguntaSeleccionada.id);
+
+            return preguntaSeleccionada;
+        }
+
+        /* ==========================================================================
+           4. TEMPORIZADOR DE JUEGO
+           ========================================================================== */
+        function iniciarTemporizador() {
+            detenerTemporizador();
+            tiempoRestanteSegundos = duracionMinutos * 60;
+            actualizarDisplayTiempo();
+
+            timerInterval = setInterval(() => {
+                if (tiempoRestanteSegundos > 0) {
+                    tiempoRestanteSegundos--;
+                    actualizarDisplayTiempo();
+                } else {
+                    detenerTemporizador();
+                    finalizarJuegoPorTiempo();
+                }
+            }, 1000);
+        }
+
+        function detenerTemporizador() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function actualizarDisplayTiempo() {
+            const mins = Math.floor(tiempoRestanteSegundos / 60);
+            const secs = tiempoRestanteSegundos % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            document.getElementById('timer-display').innerText = formatted;
+        }
+
+        function finalizarJuegoPorTiempo() {
+            juegoFinalizado = true;
+            juegoBloqueado = true;
+            document.getElementById('btn-roll').disabled = true;
+
+            // Ordenar equipos por mayor puntaje
+            const ranking = [...equipos].sort((a, b) => b.puntos - a.puntos);
+
+            const podiumContainer = document.getElementById('podium-container');
+            podiumContainer.innerHTML = '';
+
+            ranking.forEach((eq, index) => {
+                const medalla = index === 0 ? "🥇 1er Lugar" : index === 1 ? "🥈 2do Lugar" : index === 2 ? "🥉 3er Lugar" : `#${index + 1} Posición`;
+                const isWinner = index === 0;
+
+                const card = document.createElement('div');
+                card.className = `flex items-center justify-between p-3.5 rounded-2xl border ${isWinner
+                    ? 'bg-gradient-to-r from-amber-500/20 via-yellow-500/30 to-amber-500/20 border-yellow-400 text-yellow-200 shadow-lg'
+                    : 'bg-slate-800/80 border-slate-700 text-slate-200'
+                    }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-md" style="background-color: ${eq.color}">
+                            <i class="fa-solid ${eq.icono}"></i>
+                        </div>
+                        <div class="text-left">
+                            <h4 class="font-game text-base md:text-lg leading-tight">${eq.nombre}</h4>
+                            <span class="text-xs text-amber-300/90 font-semibold">${medalla} • ${eq.vueltas} Vueltas</span>
+                        </div>
+                    </div>
+                    <div class="font-game text-xl md:text-2xl text-yellow-300">
+                        ${eq.puntos} pts
+                    </div>
+                `;
+                podiumContainer.appendChild(card);
+            });
+
+            lanzarConfeti();
+            document.getElementById('modal-game-over').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           5. RENDERIZACIÓN DE TABLERO Y FICHAS
+           ========================================================================== */
+        function generarTablero() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            let matrix = Array(6).fill(null).map(() => Array(8).fill(null));
+            CIRCUITO_MAPA.forEach((pos, idx) => {
+                matrix[pos.row][pos.col] = idx;
+            });
+
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cellIndex = matrix[r][c];
+                    const cellDiv = document.createElement('div');
+
+                    if (cellIndex !== null) {
+                        cellDiv.id = `cell-${cellIndex}`;
+                        cellDiv.className = `cell p-1 md:p-2 flex flex-col justify-between items-center text-slate-800 font-bold border-2 border-slate-200/80 shadow-sm`;
+
+                        if (cellIndex === 0) {
+                            cellDiv.classList.add('cell-start');
+                            cellDiv.innerHTML = `
+                                <div class="w-full flex justify-between items-center text-[10px] md:text-xs">
+                                    <span>SALIDA</span>
+                                    <i class="fa-solid fa-flag-checkered"></i>
+                                </div>
+                                <div id="cell-tokens-${cellIndex}" class="flex flex-wrap gap-1 justify-center items-center w-full my-auto"></div>
+                            `;
+                        } else {
+                            const dif = obtenerDificultadPorCasilla(cellIndex);
+                            let difBadge = '';
+                            if (dif === 'facil') difBadge = '<span class="text-[9px] px-1 rounded bg-emerald-100 text-emerald-700">Fácil</span>';
+                            else if (dif === 'media') difBadge = '<span class="text-[9px] px-1 rounded bg-amber-100 text-amber-700">Media</span>';
+                            else difBadge = '<span class="text-[9px] px-1 rounded bg-rose-100 text-rose-700">Difícil</span>';
+
+                            cellDiv.innerHTML = `
+                                <div class="w-full flex justify-between items-center text-[10px] md:text-xs text-slate-500">
+                                    <span>#${cellIndex}</span>
+                                    ${difBadge}
+                                </div>
+                                <div id="cell-tokens-${cellIndex}" class="flex flex-wrap gap-1 justify-center items-center w-full my-auto"></div>
+                            `;
+                        }
+                    } else {
+                        cellDiv.className = 'bg-transparent border-none pointer-events-none flex items-center justify-center';
+                        if (r === 2 && c === 3) {
+                            cellDiv.innerHTML = `
+                                <div class="flex flex-col items-center justify-center text-yellow-400/30 gap-1">
+                                    <i class="fa-solid fa-trophy text-4xl md:text-6xl animation-pulse"></i>
+                                    <span class="text-lg text-center font-game tracking-widest uppercase text-indigo-200/40">
+                                        Circuito Emocionante
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    }
+                    board.appendChild(cellDiv);
+                }
+            }
+            renderizarFichas();
+        }
+
+        function renderizarFichas() {
+            for (let i = 0; i < totalCasillas; i++) {
+                const container = document.getElementById(`cell-tokens-${i}`);
+                if (container) container.innerHTML = '';
+            }
+
+            equipos.forEach((eq) => {
+                const container = document.getElementById(`cell-tokens-${eq.casilla}`);
+                if (container) {
+                    const token = document.createElement('div');
+                    token.id = `token-team-${eq.id}`;
+                    token.className = `token w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-white text-xs md:text-sm border-2 border-white shadow-md`;
+                    token.style.backgroundColor = eq.color;
+                    token.innerHTML = `<i class="fa-solid ${eq.icono}"></i>`;
+
+                    if (eq.id === turnoActualIndex) {
+                        token.classList.add('pulse-active');
+                    }
+                    container.appendChild(token);
+                }
+            });
+        }
+
+        /* ==========================================================================
+           6. ACTUALIZACIÓN DE UI Y MARCADOR
+           ========================================================================== */
+        function actualizarUI() {
+            if (juegoFinalizado) return;
+
+            const eqActivo = equipos[turnoActualIndex];
+
+            document.getElementById('active-team-name').innerText = eqActivo.nombre;
+            document.getElementById('active-team-icon-bg').style.backgroundColor = eqActivo.color;
+            document.getElementById('active-team-icon').className = `fa-solid ${eqActivo.icono}`;
+
+            const statusText = document.getElementById('active-team-status');
+            if (eqActivo.pierdeTurno) {
+                statusText.innerText = "¡Turno Suspendido!";
+                statusText.className = "text-xs font-bold text-rose-500";
+            } else {
+                statusText.innerText = "Listo para lanzar";
+                statusText.className = "text-xs font-bold text-emerald-600";
+            }
+
+            const shieldEl = document.getElementById('active-team-shield');
+            if (eqActivo.inmunidad) {
+                shieldEl.classList.remove('hidden');
+            } else {
+                shieldEl.classList.add('hidden');
+            }
+
+            const scoresContainer = document.getElementById('scores-container');
+            scoresContainer.innerHTML = '';
+
+            equipos.forEach((eq, idx) => {
+                const esSuTurno = idx === turnoActualIndex;
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-2.5 rounded-xl border transition ${esSuTurno
+                    ? 'bg-white text-slate-800 border-amber-400 ring-2 ring-amber-400/50 shadow-md'
+                    : 'bg-slate-800/60 text-slate-200 border-slate-700/60'
+                    }`;
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs" style="background-color: ${eq.color}">
+                            <i class="fa-solid ${eq.icono}"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xs md:text-sm leading-none flex items-center gap-1.5">
+                                ${eq.nombre}
+                                ${eq.inmunidad ? '<i class="fa-solid fa-shield-halved text-amber-400 text-xs" title="Inmunidad"></i>' : ''}
+                                ${eq.pierdeTurno ? '<span class="text-[10px] bg-rose-500 text-white px-1.5 rounded">Pierde Turno</span>' : ''}
+                            </span>
+                            <span class="text-[10px] opacity-75">Vuelta ${eq.vueltas} • Casilla ${eq.casilla}</span>
+                        </div>
+                    </div>
+                    <div class="font-game text-sm md:text-base ${esSuTurno ? 'text-indigo-950' : 'text-yellow-400'}">
+                        ${eq.puntos} pts
+                    </div>
+                `;
+                scoresContainer.appendChild(row);
+            });
+
+            document.getElementById('total-teams-count').innerText = `${equipos.length} Equipos`;
+            renderizarFichas();
+        }
+
+        /* ==========================================================================
+           7. DADO Y MOVIMIENTO EN CIRCUITO CONTINUO
+           ========================================================================== */
+        function lanzarDado() {
+            if (juegoBloqueado || juegoFinalizado) return;
+
+            const eqActivo = equipos[turnoActualIndex];
+
+            if (eqActivo.pierdeTurno) {
+                eqActivo.pierdeTurno = false;
+                mostrarNotificacion("¡Turno Perdido!", `${eqActivo.nombre} tenía el turno suspendido en esta ronda.`, () => {
+                    siguienteTurno();
+                });
+                return;
+            }
+
+            juegoBloqueado = true;
+            document.getElementById('btn-roll').disabled = true;
+
+            const dadoResultado = Math.floor(Math.random() * 6) + 1;
+            const cube = document.getElementById('cube');
+
+            const rotaciones = {
+                1: 'rotateY(0deg) rotateX(0deg)',
+                2: 'rotateY(-90deg) rotateX(0deg)',
+                3: 'rotateY(-180deg) rotateX(0deg)',
+                4: 'rotateY(90deg) rotateX(0deg)',
+                5: 'rotateX(-90deg) rotateY(0deg)',
+                6: 'rotateX(90deg) rotateY(0deg)'
+            };
+
+            const extraX = (Math.floor(Math.random() * 3) + 2) * 360;
+            const extraY = (Math.floor(Math.random() * 3) + 2) * 360;
+
+            cube.style.transform = `rotateX(${extraX}deg) rotateY(${extraY}deg) ${rotaciones[dadoResultado]}`;
+
+            setTimeout(() => {
+                moverEquipoCircuito(eqActivo, dadoResultado, () => {
+                    evaluarCasillaLlegada(eqActivo);
+                });
+            }, 1300);
+        }
+
+        function moverEquipoCircuito(equipo, pasos, callback) {
+            let pasosRestantes = pasos;
+
+            function paso() {
+                if (pasosRestantes > 0) {
+                    equipo.casilla++;
+
+                    // Si cruza el circuito continuo (pasa la casilla 19 vuelve a 0)
+                    if (equipo.casilla >= totalCasillas) {
+                        equipo.casilla = 0;
+                        equipo.vueltas++;
+                        equipo.puntos += 500; // Bonificación de +500 pts por vuelta completada
+                        lanzarConfetiPequeno();
+                    }
+
+                    pasosRestantes--;
+                    renderizarFichas();
+                    setTimeout(paso, 350);
+                } else {
+                    if (callback) callback();
+                }
+            }
+            paso();
+        }
+
+        function retrocederEquipoCircuito(equipo, pasos, callback) {
+            let pasosRestantes = pasos;
+
+            function paso() {
+                if (pasosRestantes > 0) {
+                    equipo.casilla--;
+                    if (equipo.casilla < 0) {
+                        equipo.casilla = totalCasillas - 1;
+                    }
+                    pasosRestantes--;
+                    renderizarFichas();
+                    setTimeout(paso, 350);
+                } else {
+                    if (callback) callback();
+                }
+            }
+            paso();
+        }
+
+        /* ==========================================================================
+           8. EVALUACIÓN Y PREGUNTAS
+           ========================================================================== */
+        function evaluarCasillaLlegada(equipo) {
+            if (juegoFinalizado) return;
+
+            const preguntaElegida = obtenerPreguntaAleatoriaPorCasilla(equipo.casilla);
+            desplegarModalPregunta(equipo, preguntaElegida);
+        }
+
+        function desplegarModalPregunta(equipo, pregunta) {
+            const modal = document.getElementById('modal-question');
+            const headerBg = document.getElementById('modal-header-bg');
+
+            headerBg.style.backgroundColor = equipo.color;
+            document.getElementById('modal-team-icon').className = `fa-solid ${equipo.icono}`;
+            document.getElementById('modal-team-name').innerText = equipo.nombre;
+
+            const tagDificultad = pregunta.nivel === 'facil' ? ' (Fácil)' : pregunta.nivel === 'media' ? ' (Nivel Medio)' : ' (¡Nivel Difícil!)';
+            document.getElementById('question-category').innerText = (pregunta.categoria || "Pregunta Bíblica") + tagDificultad;
+            document.getElementById('question-text').innerText = pregunta.pregunta;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            document.getElementById('feedback-panel').classList.add('hidden');
+            optionsContainer.classList.remove('hidden');
+
+            pregunta.opciones.forEach((opc, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3.5 rounded-2xl bg-slate-800 hover:bg-indigo-600 border border-slate-700 text-white font-semibold transition flex items-center gap-3 group active:scale-[0.98]`;
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-700 group-hover:bg-white group-hover:text-indigo-600 flex items-center justify-center font-bold text-sm transition">${String.fromCharCode(65 + idx)}</span>
+                    <span class="text-sm md:text-base">${opc}</span>
+                `;
+                btn.onclick = () => responderPregunta(equipo, pregunta, idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function responderPregunta(equipo, pregunta, opcionSeleccionada) {
+            const esCorrecta = (opcionSeleccionada === pregunta.correcta);
+            const feedbackPanel = document.getElementById('feedback-panel');
+            const optionsContainer = document.getElementById('options-container');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackDesc = document.getElementById('feedback-desc');
+
+            optionsContainer.classList.add('hidden');
+            feedbackPanel.classList.remove('hidden');
+
+            if (esCorrecta) {
+                const puntosBase = pregunta.puntos || 100;
+                const tiposPremio = ['AVANCE', 'MULTIPLICADOR', 'INMUNIDAD'];
+                const premioElegido = tiposPremio[Math.floor(Math.random() * tiposPremio.length)];
+
+                feedbackPanel.className = "p-5 rounded-2xl text-center space-y-2 border bg-emerald-950/80 border-emerald-500 text-emerald-100";
+                feedbackTitle.innerText = "¡CORRECTO! 🎉";
+                feedbackTitle.className = "font-game text-2xl text-emerald-400";
+
+                if (premioElegido === 'AVANCE') {
+                    const pasosExtra = Math.floor(Math.random() * 3) + 2;
+                    equipo.puntos += puntosBase;
+                    feedbackDesc.innerHTML = `¡Respuesta acertada! Ganaron <b>+${puntosBase} pts</b> y un premio especial: <b>¡Avanzan ${pasosExtra} pasos extra!</b> (Sin activar pregunta).`;
+
+                    setTimeout(() => {
+                        moverEquipoCircuito(equipo, pasosExtra, () => {
+                            actualizarUI();
+                        });
+                    }, 800);
+
+                } else if (premioElegido === 'MULTIPLICADOR') {
+                    const multis = [2, 5, 10];
+                    const multiElegido = multis[Math.floor(Math.random() * multis.length)];
+                    const puntosGanados = puntosBase * multiElegido;
+                    equipo.puntos += puntosGanados;
+                    feedbackDesc.innerHTML = `¡Excelente! Obtuvieron un <b>Bonus Multiplicador x${multiElegido}</b>. ¡Ganan <b>+${puntosGanados} pts</b>!`;
+
+                } else if (premioElegido === 'INMUNIDAD') {
+                    equipo.puntos += puntosBase;
+                    equipo.inmunidad = true;
+                    feedbackDesc.innerHTML = `¡Gran trabajo! Ganaron <b>+${puntosBase} pts</b> y obtuvieron un <b>Escudo de Inmunidad</b> <i class="fa-solid fa-shield-halved text-amber-400"></i> para protegerse de castigos.`;
+                }
+
+                lanzarConfetiPequeno();
+
+            } else {
+                if (equipo.inmunidad) {
+                    equipo.inmunidad = false;
+                    feedbackPanel.className = "p-5 rounded-2xl text-center space-y-2 border bg-amber-950/80 border-amber-500 text-amber-100";
+                    feedbackTitle.innerText = "¡INMUNIDAD ACTIVADA! 🛡️";
+                    feedbackTitle.className = "font-game text-2xl text-amber-400";
+                    feedbackDesc.innerHTML = `La respuesta fue incorrecta, ¡pero tu <b>Escudo de Inmunidad</b> te protegió de los castigos! Tu carro permanece en la casilla actual.`;
+
+                } else {
+                    feedbackPanel.className = "p-5 rounded-2xl text-center space-y-2 border bg-rose-950/80 border-rose-500 text-rose-100";
+                    feedbackTitle.innerText = "RESPUESTA INCORRECTA ❌";
+                    feedbackTitle.className = "font-game text-2xl text-rose-400";
+
+                    const tiposCastigo = ['PERDER_PUNTOS', 'RETROCEDER', 'PERDER_TURNO'];
+                    const castigoElegido = tiposCastigo[Math.floor(Math.random() * tiposCastigo.length)];
+
+                    if (castigoElegido === 'PERDER_PUNTOS') {
+                        const puntosPerdidos = pregunta.puntos || 100;
+                        equipo.puntos = Math.max(0, equipo.puntos - puntosPerdidos);
+                        feedbackDesc.innerHTML = `Castigo recibido: <b>Pierden -${puntosPerdidos} pts</b>.`;
+
+                    } else if (castigoElegido === 'RETROCEDER') {
+                        const pasosAtras = Math.floor(Math.random() * 3) + 2;
+                        feedbackDesc.innerHTML = `Castigo recibido: <b>Retroceden ${pasosAtras} pasos</b>.`;
+
+                        setTimeout(() => {
+                            retrocederEquipoCircuito(equipo, pasosAtras, () => {
+                                actualizarUI();
+                            });
+                        }, 800);
+
+                    } else if (castigoElegido === 'PERDER_TURNO') {
+                        equipo.pierdeTurno = true;
+                        feedbackDesc.innerHTML = `Castigo recibido: <b>El equipo perderá su turno en la siguiente ronda</b>.`;
+                    }
+                }
+            }
+
+            actualizarUI();
+        }
+
+        function cerrarModalPregunta() {
+            document.getElementById('modal-question').classList.add('hidden');
+            if (tiempoRestanteSegundos <= 0) {
+                finalizarJuegoPorTiempo();
+            } else {
+                siguienteTurno();
+            }
+        }
+
+        function siguienteTurno() {
+            turnoActualIndex = (turnoActualIndex + 1) % equipos.length;
+            juegoBloqueado = false;
+            document.getElementById('btn-roll').disabled = false;
+            actualizarUI();
+        }
+
+        /* ==========================================================================
+           9. NOTIFICACIONES
+           ========================================================================== */
+        function mostrarNotificacion(titulo, mensaje, callback) {
+            const modal = document.getElementById('modal-question');
+            document.getElementById('modal-header-bg').style.backgroundColor = '#475569';
+            document.getElementById('modal-team-icon').className = 'fa-solid fa-bell';
+            document.getElementById('modal-team-name').innerText = 'Aviso de Carrera';
+
+            document.getElementById('question-category').innerText = 'INFORMACIÓN';
+            document.getElementById('question-text').innerText = titulo;
+
+            document.getElementById('options-container').classList.add('hidden');
+            const feedbackPanel = document.getElementById('feedback-panel');
+            feedbackPanel.classList.remove('hidden');
+            feedbackPanel.className = "p-5 rounded-2xl text-center space-y-3 border bg-slate-800 border-slate-600 text-white";
+
+            document.getElementById('feedback-title').innerText = titulo;
+            document.getElementById('feedback-desc').innerText = mensaje;
+
+            const btn = document.getElementById('btn-close-modal');
+            btn.onclick = () => {
+                modal.classList.add('hidden');
+                if (callback) callback();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           10. MENÚ Y CONFIGURACIÓN
+           ========================================================================== */
+        window.onload = function () {
+            configTeamCount = 2;
+            duracionMinutos = 5;
+            renderMenuTeamsList();
+        };
+
+        function seleccionarTiempo(mins) {
+            duracionMinutos = mins;
+            const buttons = document.querySelectorAll('.time-select-btn');
+            buttons.forEach(btn => {
+                btn.className = "time-select-btn flex-1 py-2 bg-slate-800 hover:bg-indigo-600 text-slate-300 font-bold rounded-xl text-sm transition";
+            });
+            const selectedBtn = document.getElementById(`time-btn-${mins}`);
+            if (selectedBtn) {
+                selectedBtn.className = "time-select-btn flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition";
+            }
+        }
+
+        function cambiarCantidadEquipos(delta) {
+            configTeamCount = Math.max(2, Math.min(8, configTeamCount + delta));
+            document.getElementById('menu-team-count').innerText = configTeamCount;
+            renderMenuTeamsList();
+        }
+
+        function renderMenuTeamsList() {
+            const container = document.getElementById('menu-teams-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 0; i < configTeamCount; i++) {
+                const preset = EQUIPOS_PRESET[i];
+                const eqActual = equipos[i] || preset;
+
+                const row = document.createElement('div');
+                row.className = "flex items-center gap-2.5 bg-slate-800 p-2.5 rounded-2xl border border-slate-700/80";
+                row.innerHTML = `
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-base shadow-sm" style="background-color: ${preset.color}">
+                        <i class="fa-solid ${preset.icono}"></i>
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Equipo ${i + 1}</span>
+                        <input type="text" id="menu-team-name-${i}" value="${eqActual.nombre || preset.nombre}" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-sm text-white font-semibold focus:outline-none focus:border-indigo-500">
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function iniciarJuegoDesdeMenu() {
+            equipos = [];
+            for (let i = 0; i < configTeamCount; i++) {
+                const preset = EQUIPOS_PRESET[i];
+                const inputEl = document.getElementById(`menu-team-name-${i}`);
+                const nombreIngresado = inputEl ? inputEl.value.trim() : "";
+
+                equipos.push({
+                    id: i,
+                    nombre: nombreIngresado || preset.nombre,
+                    color: preset.color,
+                    icono: preset.icono,
+                    casilla: 0,
+                    vueltas: 0,
+                    puntos: 0,
+                    inmunidad: false,
+                    pierdeTurno: false
+                });
+            }
+
+            turnoActualIndex = 0;
+            juegoBloqueado = false;
+            juegoFinalizado = false;
+            preguntasUsadasIds.clear();
+
+            generarTablero();
+            actualizarUI();
+            iniciarTemporizador();
+
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+        }
+
+        function volverAlMenu() {
+            detenerTemporizador();
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-menu').classList.remove('hidden');
+            renderMenuTeamsList();
+        }
+
+        function reiniciarJuego() {
+            detenerTemporizador();
+            equipos.forEach(eq => {
+                eq.casilla = 0;
+                eq.vueltas = 0;
+                eq.puntos = 0;
+                eq.inmunidad = false;
+                eq.pierdeTurno = false;
+            });
+            turnoActualIndex = 0;
+            juegoBloqueado = false;
+            juegoFinalizado = false;
+            document.getElementById('btn-roll').disabled = false;
+            preguntasUsadasIds.clear();
+
+            generarTablero();
+            actualizarUI();
+            iniciarTemporizador();
+        }
+
+        /* Confeti */
+        function lanzarConfeti() {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function lanzarConfetiPequeno() {
+            confetti({
+                particleCount: 40,
+                spread: 50,
+                origin: { y: 0.7 }
+            });
+        }
+    </script>
+</body>
+
+</html>
